@@ -422,16 +422,7 @@
       <h2>Poruci <em>macun med</em><br>odmah</h2>
       <p>Popunite formu — kontaktiramo vas u roku od par sati za potvrdu porudzbine i dostavu.</p>
       <div class="order-form">
-        <!--
-          FORMSPREE PODESAVANJE:
-          1. Idite na formspree.io i registrujte se besplatno
-          2. Kliknite "New Form" i unesite email: info@com.in.rs
-          3. Dobicete link oblika: https://formspree.io/f/xyzABCDE
-          4. Zamenite "VASE_FORMSPREE_ID" ispod sa tim kodom (samo ID deo, npr. xyzABCDE)
-        -->
-        <form id="orderForm" action="https://formspree.io/f/VASE_FORMSPREE_ID" method="POST">
-          <input type="hidden" name="_subject" value="Nova porudzbina — Macun Med" />
-          <input type="hidden" name="_language" value="sr" />
+        <form id="orderForm">
           <div class="form-row">
             <label>Izaberite proizvod *</label>
             <div class="product-select">
@@ -451,23 +442,28 @@
           </div>
           <div class="form-row">
             <label>Ime i prezime *</label>
-            <input type="text" name="ime" placeholder="Vase ime i prezime" required />
+            <input type="text" id="f-ime" placeholder="Vase ime i prezime" required />
           </div>
           <div class="form-row">
             <label>Broj telefona *</label>
-            <input type="tel" name="telefon" placeholder="06X XXX XXXX" required />
+            <input type="tel" id="f-tel" placeholder="06X XXX XXXX" required />
           </div>
           <div class="form-row">
             <label>Grad / Adresa dostave *</label>
-            <input type="text" name="adresa" placeholder="Npr. Beograd, Kralja Petra 1" required />
+            <input type="text" id="f-adresa" placeholder="Npr. Beograd, Kralja Petra 1" required />
+          </div>
+          <div class="form-row">
+            <label>Kolicina</label>
+            <input type="number" id="f-kolicina" placeholder="1" min="1" value="1" />
           </div>
           <div class="form-row">
             <label>Napomena (opciono)</label>
-            <textarea name="napomena" placeholder="Kolicina, posebni zahtevi..."></textarea>
+            <textarea id="f-napomena" placeholder="Posebni zahtevi..."></textarea>
           </div>
           <button type="submit" class="form-submit">&#x1F36F; Posalji porudzbinu</button>
-          <div class="form-success" id="formSuccess">&#x2705; Porudzbina primljena! Kontakticemo vas uskoro za potvrdu.</div>
-          <div class="form-error" id="formError">&#x274C; Doslo je do greske. Pokusajte ponovo.</div>
+          <div class="form-info" id="formInfo" style="display:none;background:#2A1F08;border:1px solid #5A4525;border-radius:10px;padding:1.2rem;text-align:center;color:var(--text2);font-size:.85rem;margin-top:1rem;line-height:1.7;">
+            &#x2709;&#xFE0F; Otvorice se vas mail klijent sa popunjenom porudzbinom.<br>Samo kliknite <strong style="color:var(--gold2)">Send / Posalji</strong> u mailu.
+          </div>
           <p class="form-note">&#x1F512; Diskretna dostava &middot; Placanje pouzecemna na vrata &middot; Bez registracije</p>
         </form>
       </div>
@@ -498,19 +494,53 @@
     });
   });
 
-  const form=document.getElementById('orderForm');
-  const ok=document.getElementById('formSuccess');
-  const err=document.getElementById('formError');
-  form.addEventListener('submit',async e=>{
+  const form = document.getElementById('orderForm');
+  const infoMsg = document.getElementById('formInfo');
+
+  form.addEventListener('submit', e => {
     e.preventDefault();
-    const btn=form.querySelector('.form-submit');
-    btn.textContent='Saljem...';btn.disabled=true;
-    ok.style.display='none';err.style.display='none';
-    try{
-      const res=await fetch(form.action,{method:'POST',body:new FormData(form),headers:{'Accept':'application/json'}});
-      if(res.ok){ok.style.display='block';form.reset();document.querySelectorAll('.prod-btn').forEach(b=>b.classList.remove('selected'));btn.textContent='Porudzbina poslata!';}
-      else throw new Error();
-    }catch{err.style.display='block';btn.textContent='Posalji porudzbinu';btn.disabled=false;}
+
+    // Validacija
+    const proizvod = form.querySelector('input[name="proizvod"]:checked');
+    const ime      = document.getElementById('f-ime').value.trim();
+    const tel      = document.getElementById('f-tel').value.trim();
+    const adresa   = document.getElementById('f-adresa').value.trim();
+    const kolicina = document.getElementById('f-kolicina').value.trim() || '1';
+    const napomena = document.getElementById('f-napomena').value.trim();
+
+    if (!proizvod || !ime || !tel || !adresa) {
+      alert('Molimo popunite sva obavezna polja (proizvod, ime, telefon, adresa).');
+      return;
+    }
+
+    // Sastavljamo telo emaila
+    const body = [
+      'NOVA PORUDZBINA — MACUN MED',
+      '================================',
+      '',
+      'PROIZVOD:  ' + proizvod.value,
+      'KOLICINA:  ' + kolicina,
+      '',
+      'IME:       ' + ime,
+      'TELEFON:   ' + tel,
+      'ADRESA:    ' + adresa,
+      napomena ? 'NAPOMENA:  ' + napomena : '',
+      '',
+      '================================',
+      'Poslato sa: macun-med-za-potenciju-cena.com.in.rs',
+    ].filter(Boolean).join('\n');
+
+    const subject = 'Porudzbina: ' + proizvod.value.split(' (')[0];
+
+    // Otvaramo mail klijent
+    window.location.href =
+      'mailto:info@com.in.rs' +
+      '?subject=' + encodeURIComponent(subject) +
+      '&body='    + encodeURIComponent(body);
+
+    // Prikazujemo info poruku
+    infoMsg.style.display = 'block';
+    infoMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
 </script>
 </body>
